@@ -628,7 +628,3 @@ class MainWindow(FluentWindow):
     def _init_navigation(self):
         self.addSubInterface(self.merge_interface, FIF.ALBUM, "PDF 병합 (Merge)")
         self.addSubInterface(self.split_interface, FIF.CUT, "PDF 분할 (Split)")
-        
-        # Position navigation bar elegantly
-        self.navigationInterface.setMinimumExpandWidth(180)
-        self.navigationInterface.setExpand(True)
