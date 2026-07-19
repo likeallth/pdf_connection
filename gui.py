@@ -51,27 +51,29 @@ class MergeInterface(QWidget):
         self.file_list_widget.itemSelectionChanged.connect(self._on_item_selection_changed)
         left_panel.addWidget(self.file_list_widget)
         
-        # List control buttons
-        btn_layout = QHBoxLayout()
-        btn_layout.setSpacing(8)
+        # List control buttons (2x2 grid layout to fit compact view)
+        btn_layout = QVBoxLayout()
+        btn_layout.setSpacing(6)
         
-        self.btn_add = PushButton("파일 추가 (Add PDF)", self, FIF.ADD)
+        row1 = QHBoxLayout()
+        self.btn_add = PushButton("파일 추가", self, FIF.ADD)
         self.btn_add.clicked.connect(self._add_files)
-        btn_layout.addWidget(self.btn_add)
+        row1.addWidget(self.btn_add)
         
-        self.btn_remove = PushButton("제거 (Remove)", self, FIF.DELETE)
+        self.btn_remove = PushButton("파일 제거", self, FIF.DELETE)
         self.btn_remove.clicked.connect(self._remove_file)
-        btn_layout.addWidget(self.btn_remove)
+        row1.addWidget(self.btn_remove)
+        btn_layout.addLayout(row1)
         
-        btn_layout.addStretch(1)
-        
+        row2 = QHBoxLayout()
         self.btn_up = PushButton("위로 이동", self, FIF.UP)
         self.btn_up.clicked.connect(self._move_up)
-        btn_layout.addWidget(self.btn_up)
+        row2.addWidget(self.btn_up)
         
         self.btn_down = PushButton("아래로 이동", self, FIF.DOWN)
         self.btn_down.clicked.connect(self._move_down)
-        btn_layout.addWidget(self.btn_down)
+        row2.addWidget(self.btn_down)
+        btn_layout.addLayout(row2)
         
         left_panel.addLayout(btn_layout)
         main_layout.addLayout(left_panel, 3)  # Left panel takes larger space
@@ -130,7 +132,7 @@ class MergeInterface(QWidget):
         self.switch_dedup.setChecked(True)
         card_merge_layout.addWidget(self.switch_dedup)
         
-        self.btn_merge_execute = PrimaryPushButton("PDF 병합 실행 (Merge PDFs)", card_merge, FIF.COMPLETED)
+        self.btn_merge_execute = PrimaryPushButton("PDF 병합 실행", card_merge, FIF.COMPLETED)
         self.btn_merge_execute.clicked.connect(self._execute_merge)
         card_merge_layout.addWidget(self.btn_merge_execute)
         
@@ -413,14 +415,14 @@ class SplitInterface(QWidget):
         self.btn_group = QButtonGroup(self)
         
         # Mode 1: Every page
-        self.rad_every = RadioButton("낱장 분할 (Extract every page as a single PDF)", self.card_options)
+        self.rad_every = RadioButton("낱장 분할 (각 페이지를 개별 파일로 추출)", self.card_options)
         self.rad_every.setChecked(True)
         self.btn_group.addButton(self.rad_every, 0)
         opt_layout.addWidget(self.rad_every)
         
         # Mode 2: Split at Page X
         mode2_layout = QHBoxLayout()
-        self.rad_at_page = RadioButton("지정 페이지 기준 이분할 (Split into 2 files at page index):", self.card_options)
+        self.rad_at_page = RadioButton("지정 페이지 기준 이분할:", self.card_options)
         self.btn_group.addButton(self.rad_at_page, 1)
         mode2_layout.addWidget(self.rad_at_page)
         
@@ -429,7 +431,7 @@ class SplitInterface(QWidget):
         self.split_at_entry.setEnabled(False)
         mode2_layout.addWidget(self.split_at_entry)
         
-        lbl_hint_at = BodyLabel("(예: 4 -> 1-4페이지 파일 1개, 5-마지막페이지 파일 1개 생성)", self.card_options)
+        lbl_hint_at = BodyLabel("(예: 4 -> 1-4페이지 및 5-마지막페이지 파일로 이분할)", self.card_options)
         lbl_hint_at.setStyleSheet("color: gray; font-size: 11px;")
         mode2_layout.addWidget(lbl_hint_at)
         mode2_layout.addStretch(1)
@@ -437,7 +439,7 @@ class SplitInterface(QWidget):
         
         # Mode 3: Custom Ranges
         mode3_layout = QHBoxLayout()
-        self.rad_ranges = RadioButton("범위 지정 분할 (Split by custom ranges):", self.card_options)
+        self.rad_ranges = RadioButton("범위 지정 분할:", self.card_options)
         self.btn_group.addButton(self.rad_ranges, 2)
         mode3_layout.addWidget(self.rad_ranges)
         
@@ -460,10 +462,10 @@ class SplitInterface(QWidget):
         out_layout = QHBoxLayout(self.card_output)
         out_layout.setContentsMargins(15, 15, 15, 15)
         
-        self.lbl_split_output_dir = BodyLabel("저장 폴더: 원본 파일 위치와 동일 (Default: Same as Source Folder)", self.card_output)
+        self.lbl_split_output_dir = BodyLabel("저장 폴더: 원본 파일 위치와 동일", self.card_output)
         out_layout.addWidget(self.lbl_split_output_dir, 1)
         
-        self.btn_select_out = PushButton("폴더 선택", self.card_output, FIF.FOLDER)
+        self.btn_select_out = PushButton("저장 폴더 선택", self.card_output, FIF.FOLDER)
         self.btn_select_out.clicked.connect(self._select_split_output_dir)
         out_layout.addWidget(self.btn_select_out)
         
@@ -475,7 +477,7 @@ class SplitInterface(QWidget):
         self.lbl_split_status.setStyleSheet("color: gray; font-style: italic;")
         action_layout.addWidget(self.lbl_split_status)
         
-        self.btn_split_execute = PrimaryPushButton("PDF 분할 실행 (Split PDF)", self, FIF.COMPLETED)
+        self.btn_split_execute = PrimaryPushButton("PDF 분할 실행", self, FIF.COMPLETED)
         self.btn_split_execute.setEnabled(False)
         self.btn_split_execute.clicked.connect(self._execute_split)
         action_layout.addWidget(self.btn_split_execute)
@@ -612,8 +614,8 @@ class MainWindow(FluentWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("PDF Connection")
-        self.resize(850, 650)
-        self.setMinimumSize(800, 600)
+        self.resize(1000, 750)
+        self.setMinimumSize(900, 680)
         
         # Force Light Theme for consistent elegant look (or can use system theme)
         setTheme(Theme.LIGHT)
@@ -628,3 +630,12 @@ class MainWindow(FluentWindow):
     def _init_navigation(self):
         self.addSubInterface(self.merge_interface, FIF.ALBUM, "PDF 병합 (Merge)")
         self.addSubInterface(self.split_interface, FIF.CUT, "PDF 분할 (Split)")
+        
+        # Safely set expand width for side navigation to prevent text clip
+        try:
+            self.navigationInterface.setMinimumExpandWidth(220)
+        except AttributeError:
+            try:
+                self.navigationInterface.setExpandWidth(220)
+            except AttributeError:
+                pass
