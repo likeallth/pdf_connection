@@ -619,7 +619,9 @@ class MainWindow(FluentWindow):
         setTheme(Theme.LIGHT)
         
         self.merge_interface = MergeInterface(self)
+        self.merge_interface.setObjectName("mergeInterface")
         self.split_interface = SplitInterface(self)
+        self.split_interface.setObjectName("splitInterface")
         
         self._init_navigation()
 
