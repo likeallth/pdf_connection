@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all
 
-datas = [('.venv\\Lib\\site-packages\\PyQt6\\Qt6\\plugins\\platforms', 'platforms')]
+datas = [('.venv\\Lib\\site-packages\\PyQt6\\Qt6\\plugins\\platforms', 'PyQt6/Qt6/plugins/platforms')]
 binaries = [('C:\\Users\\likea\\anaconda3\\Library\\bin\\ffi.dll', '.'), ('C:\\Users\\likea\\anaconda3\\Library\\bin\\ffi-8.dll', '.'), ('C:\\Users\\likea\\anaconda3\\Library\\bin\\liblzma.dll', '.'), ('C:\\Users\\likea\\anaconda3\\Library\\bin\\libbz2.dll', '.')]
 hiddenimports = []
 tmp_ret = collect_all('qfluentwidgets')
