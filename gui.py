@@ -2,44 +2,53 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import os
 from pdf_processor import PDFProcessor
-import fitz  # To read page counts directly in GUI
+import fitz
 
 class PDFConnectionApp:
     def __init__(self, root):
         self.root = root
         self.root.title("PDF Connection")
-        self.root.geometry("750x550")
-        self.root.minsize(700, 500)
-        
-        # Data structures
-        self.pdf_list = []  # List of absolute file paths
-        self.pdf_metadata = {}  # Map: abs_path -> {"pages": count, "exclude_str": ""}
-        self.current_selection_idx = -1
+        self.root.geometry("800x600")
+        self.root.minsize(750, 550)
         
         # Configure styles
         self.style = ttk.Style()
         self.style.theme_use('vista' if 'vista' in self.style.theme_names() else 'default')
         
-        # Create Layout
-        self._create_widgets()
-        self._setup_bindings()
+        # Setup Notebook (Tabs)
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(fill=tk.BOTH, expand=True)
+        
+        # Merge Tab Frame
+        self.merge_tab = ttk.Frame(self.notebook, padding="15")
+        self.notebook.add(self.merge_tab, text=" Merge PDFs (병합) ")
+        
+        # Split Tab Frame
+        self.split_tab = ttk.Frame(self.notebook, padding="15")
+        self.notebook.add(self.split_tab, text=" Split PDF (분할) ")
+        
+        # Build UI for both tabs
+        self._build_merge_ui()
+        self._build_split_ui()
 
-    def _create_widgets(self):
-        # Main container with padding
-        main_frame = ttk.Frame(self.root, padding="15")
-        main_frame.pack(fill=tk.BOTH, expand=True)
+    # ==================== MERGE TAB LOGIC & UI ====================
+    def _build_merge_ui(self):
+        # Data structures for merge
+        self.pdf_list = []  # List of absolute file paths
+        self.pdf_metadata = {}  # Map: abs_path -> {"pages": count, "exclude_str": ""}
+        self.current_selection_idx = -1
         
         # Title Banner
         title_label = ttk.Label(
-            main_frame, 
-            text="PDF Connection", 
-            font=("Segoe UI", 18, "bold"),
+            self.merge_tab, 
+            text="PDF Connection - Merge", 
+            font=("Segoe UI", 16, "bold"),
             foreground="#1a5f7a"
         )
-        title_label.pack(anchor=tk.W, pady=(0, 15))
+        title_label.pack(anchor=tk.W, pady=(0, 10))
         
         # Middle Area (Split into Left and Right)
-        middle_frame = ttk.Frame(main_frame)
+        middle_frame = ttk.Frame(self.merge_tab)
         middle_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
         
         # Left Panel (File List & Controls)
@@ -118,7 +127,7 @@ class PDFConnectionApp:
         self.exclude_entry.state(['disabled'])
         
         # Bottom Area (Global Options & Run)
-        bottom_frame = ttk.LabelFrame(main_frame, text=" Merge & Output Settings ", padding="15")
+        bottom_frame = ttk.LabelFrame(self.merge_tab, text=" Merge & Output Settings ", padding="15")
         bottom_frame.pack(fill=tk.X)
         
         # Options
@@ -134,24 +143,20 @@ class PDFConnectionApp:
         action_row = ttk.Frame(bottom_frame)
         action_row.pack(fill=tk.X)
         
-        self.btn_merge = ttk.Button(action_row, text="Merge PDFs", style="Accent.TButton", command=self._execute_merge)
+        self.btn_merge = ttk.Button(action_row, text="Merge PDFs", command=self._execute_merge)
         self.btn_merge.pack(side=tk.RIGHT, padx=(10, 0))
         
         # Status Label
         self.lbl_status = ttk.Label(action_row, text="Ready. Add PDF files to start.", font=("Segoe UI", 9, "italic"), foreground="gray")
         self.lbl_status.pack(side=tk.LEFT, fill=tk.X, expand=True)
-
-    def _setup_bindings(self):
-        # Update details when selection changes in listbox
-        self.file_listbox.bind('<<ListboxSelect>>', self._on_listbox_select)
         
-        # Register a validator or save on focus out/key release
+        # Setup bindings for Merge Tab
+        self.file_listbox.bind('<<ListboxSelect>>', self._on_listbox_select)
         self.exclude_entry.bind("<FocusOut>", lambda e: self._save_current_exclusions(silent=True))
 
     def _update_listbox(self):
         self.file_listbox.delete(0, tk.END)
         for path in self.pdf_list:
-            # Display filename and total pages
             filename = os.path.basename(path)
             meta = self.pdf_metadata.get(path, {"pages": 0, "exclude_str": ""})
             exclude_text = f" [Excludes: {meta['exclude_str']}]" if meta['exclude_str'] else ""
@@ -171,7 +176,6 @@ class PDFConnectionApp:
                 continue
                 
             try:
-                # Get page count using fitz
                 doc = fitz.open(abs_path)
                 page_count = len(doc)
                 doc.close()
@@ -209,8 +213,6 @@ class PDFConnectionApp:
         idx = sel[0]
         if idx == 0:
             return
-            
-        # Swap
         self.pdf_list[idx], self.pdf_list[idx-1] = self.pdf_list[idx-1], self.pdf_list[idx]
         self._update_listbox()
         self.file_listbox.select_set(idx-1)
@@ -223,8 +225,6 @@ class PDFConnectionApp:
         idx = sel[0]
         if idx == len(self.pdf_list) - 1:
             return
-            
-        # Swap
         self.pdf_list[idx], self.pdf_list[idx+1] = self.pdf_list[idx+1], self.pdf_list[idx]
         self._update_listbox()
         self.file_listbox.select_set(idx+1)
@@ -239,18 +239,15 @@ class PDFConnectionApp:
         path = self.pdf_list[idx]
         self.current_selection_idx = idx
         
-        # Load details
         filename = os.path.basename(path)
         meta = self.pdf_metadata[path]
         
         self.lbl_selected_title.config(text=filename)
         self.lbl_page_count.config(text=f"Total Pages: {meta['pages']}")
         
-        # Enable entries
         self.exclude_entry.state(['!disabled'])
         self.btn_save_settings.state(['!disabled'])
         
-        # Load exclude string
         self.exclude_entry.delete(0, tk.END)
         self.exclude_entry.insert(0, meta["exclude_str"])
 
@@ -263,9 +260,6 @@ class PDFConnectionApp:
         self.btn_save_settings.state(['disabled'])
 
     def _parse_exclude_string(self, pages_str, max_pages):
-        """
-        Parse user input string to 0-based page index set.
-        """
         if not pages_str.strip():
             return set(), None
             
@@ -310,19 +304,16 @@ class PDFConnectionApp:
         exclude_str = self.exclude_entry.get().strip()
         
         if exclude_str == meta["exclude_str"]:
-            return True  # No change
+            return True
             
-        # Validate input
         excluded, err = self._parse_exclude_string(exclude_str, meta["pages"])
         if err:
             if not silent:
                 messagebox.showerror("Validation Error", f"Failed to apply exclusions:\n{err}")
             return False
             
-        # Update metadata
         meta["exclude_str"] = exclude_str
         self._update_listbox()
-        # Keep selection
         self.file_listbox.select_set(self.current_selection_idx)
         
         if not silent:
@@ -334,11 +325,9 @@ class PDFConnectionApp:
             messagebox.showwarning("Warning", "Please add at least one PDF file.")
             return
             
-        # Ensure any pending input in exclude entry is saved
         if not self._save_current_exclusions(silent=False):
-            return  # Validation failed
+            return
             
-        # Choose output file
         output_file = filedialog.asksaveasfilename(
             title="Save Merged PDF As",
             defaultextension=".pdf",
@@ -350,7 +339,6 @@ class PDFConnectionApp:
         self.lbl_status.config(text="Processing PDFs... Please wait.")
         self.root.update_idletasks()
         
-        # Prepare page exclusions
         exclude_pages = {}
         for path in self.pdf_list:
             meta = self.pdf_metadata[path]
@@ -358,7 +346,6 @@ class PDFConnectionApp:
                 excluded_set, _ = self._parse_exclude_string(meta["exclude_str"], meta["pages"])
                 exclude_pages[path] = excluded_set
                 
-        # Merge
         remove_dups = self.dedup_var.get()
         success, msg = PDFProcessor.merge_pdfs(
             pdf_paths=self.pdf_list,
@@ -373,6 +360,271 @@ class PDFConnectionApp:
         else:
             self.lbl_status.config(text="Merge failed.")
             messagebox.showerror("Error", f"Failed to merge PDFs:\n{msg}")
+
+
+    # ==================== SPLIT TAB LOGIC & UI ====================
+    def _build_split_ui(self):
+        # State variables for split
+        self.split_source_path = ""
+        self.split_source_pages = 0
+        self.split_output_dir = ""
+        
+        # Title Banner
+        title_label = ttk.Label(
+            self.split_tab, 
+            text="PDF Connection - Split", 
+            font=("Segoe UI", 16, "bold"),
+            foreground="#1a5f7a"
+        )
+        title_label.pack(anchor=tk.W, pady=(0, 10))
+        
+        # File selector frame
+        file_frame = ttk.LabelFrame(self.split_tab, text=" Source PDF File ", padding="10")
+        file_frame.pack(fill=tk.X, pady=(0, 15))
+        
+        file_row = ttk.Frame(file_frame)
+        file_row.pack(fill=tk.X)
+        
+        self.lbl_split_file_path = ttk.Label(file_row, text="No PDF file selected", font=("Segoe UI", 10), wraplength=500)
+        self.lbl_split_file_path.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        btn_select_split_file = ttk.Button(file_row, text="Select PDF", command=self._select_split_source)
+        btn_select_split_file.pack(side=tk.RIGHT)
+        
+        self.lbl_split_page_count = ttk.Label(file_frame, text="Total Pages: -", font=("Segoe UI", 9, "italic"), foreground="gray")
+        self.lbl_split_page_count.pack(anchor=tk.W, pady=(5, 0))
+        
+        # Split options frame
+        self.opt_frame = ttk.LabelFrame(self.split_tab, text=" Split Settings ", padding="15")
+        self.opt_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
+        
+        # Radio variables
+        self.split_mode_var = tk.StringVar(value="every")
+        
+        # Mode 1: Every page
+        self.rad_every = ttk.Radiobutton(
+            self.opt_frame, 
+            text="Extract every page as a single PDF (낱장 분할)", 
+            value="every", 
+            variable=self.split_mode_var,
+            command=self._on_split_mode_change
+        )
+        self.rad_every.pack(anchor=tk.W, pady=5)
+        
+        # Mode 2: Split at Page X
+        mode2_row = ttk.Frame(self.opt_frame)
+        mode2_row.pack(fill=tk.X, anchor=tk.W, pady=5)
+        
+        self.rad_at_page = ttk.Radiobutton(
+            mode2_row, 
+            text="Split into 2 files at page index (지정 페이지 이분할):", 
+            value="at_page", 
+            variable=self.split_mode_var,
+            command=self._on_split_mode_change
+        )
+        self.rad_at_page.pack(side=tk.LEFT)
+        
+        self.split_at_entry = ttk.Entry(mode2_row, width=8, font=("Segoe UI", 10))
+        self.split_at_entry.pack(side=tk.LEFT, padx=10)
+        self.split_at_entry.state(['disabled'])
+        
+        self.lbl_at_hint = ttk.Label(mode2_row, text="(e.g., 4: splits into pages 1-4 and 5-end)", font=("Segoe UI", 8), foreground="gray")
+        self.lbl_at_hint.pack(side=tk.LEFT)
+        
+        # Mode 3: Custom Ranges
+        mode3_row = ttk.Frame(self.opt_frame)
+        mode3_row.pack(fill=tk.X, anchor=tk.W, pady=5)
+        
+        self.rad_ranges = ttk.Radiobutton(
+            mode3_row, 
+            text="Split by custom ranges (범위 지정 분할):", 
+            value="ranges", 
+            variable=self.split_mode_var,
+            command=self._on_split_mode_change
+        )
+        self.rad_ranges.pack(side=tk.LEFT)
+        
+        self.split_ranges_entry = ttk.Entry(mode3_row, width=20, font=("Segoe UI", 10))
+        self.split_ranges_entry.pack(side=tk.LEFT, padx=10)
+        self.split_ranges_entry.state(['disabled'])
+        
+        self.lbl_ranges_hint = ttk.Label(mode3_row, text="(e.g., 1-3, 4-5)", font=("Segoe UI", 8), foreground="gray")
+        self.lbl_ranges_hint.pack(side=tk.LEFT)
+        
+        # Disable all inputs initially
+        self._disable_split_settings()
+        
+        # Output directory frame
+        out_frame = ttk.LabelFrame(self.split_tab, text=" Output Settings ", padding="10")
+        out_frame.pack(fill=tk.X, pady=(0, 15))
+        
+        out_row = ttk.Frame(out_frame)
+        out_row.pack(fill=tk.X)
+        
+        self.lbl_split_output_dir = ttk.Label(out_row, text="No output folder selected (Will default to source PDF folder)", font=("Segoe UI", 10), wraplength=500)
+        self.lbl_split_output_dir.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        btn_select_out_dir = ttk.Button(out_row, text="Select Folder", command=self._select_split_output_dir)
+        btn_select_out_dir.pack(side=tk.RIGHT)
+        
+        # Split execution bar
+        split_action_row = ttk.Frame(self.split_tab)
+        split_action_row.pack(fill=tk.X)
+        
+        self.btn_split_execute = ttk.Button(split_action_row, text="Split PDF", command=self._execute_split)
+        self.btn_split_execute.pack(side=tk.RIGHT)
+        self.btn_split_execute.state(['disabled'])
+        
+        self.lbl_split_status = ttk.Label(split_action_row, text="Please select a source PDF file.", font=("Segoe UI", 9, "italic"), foreground="gray")
+        self.lbl_split_status.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+    def _select_split_source(self):
+        file = filedialog.askopenfilename(
+            title="Select PDF to Split",
+            filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")]
+        )
+        if not file:
+            return
+            
+        abs_path = os.path.abspath(file)
+        try:
+            doc = fitz.open(abs_path)
+            self.split_source_pages = len(doc)
+            doc.close()
+            
+            self.split_source_path = abs_path
+            self.lbl_split_file_path.config(text=abs_path)
+            self.lbl_split_page_count.config(text=f"Total Pages: {self.split_source_pages}")
+            
+            # Enable split settings & execution
+            self._enable_split_settings()
+            self.btn_split_execute.state(['!disabled'])
+            self.lbl_split_status.config(text="Ready. Select split mode and execute.")
+            
+            # Default output directory to source directory
+            if not self.split_output_dir:
+                self.lbl_split_output_dir.config(text=os.path.dirname(abs_path))
+                
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load PDF file:\n{str(e)}")
+            self._disable_split_settings()
+            self.btn_split_execute.state(['disabled'])
+
+    def _select_split_output_dir(self):
+        folder = filedialog.askdirectory(title="Select Output Folder")
+        if folder:
+            self.split_output_dir = os.path.abspath(folder)
+            self.lbl_split_output_dir.config(text=self.split_output_dir)
+
+    def _on_split_mode_change(self):
+        mode = self.split_mode_var.get()
+        if mode == "every":
+            self.split_at_entry.state(['disabled'])
+            self.split_ranges_entry.state(['disabled'])
+        elif mode == "at_page":
+            self.split_at_entry.state(['!disabled'])
+            self.split_ranges_entry.state(['disabled'])
+        elif mode == "ranges":
+            self.split_at_entry.state(['disabled'])
+            self.split_ranges_entry.state(['!disabled'])
+
+    def _disable_split_settings(self):
+        self.rad_every.state(['disabled'])
+        self.rad_at_page.state(['disabled'])
+        self.rad_ranges.state(['disabled'])
+        self.split_at_entry.state(['disabled'])
+        self.split_ranges_entry.state(['disabled'])
+
+    def _enable_split_settings(self):
+        self.rad_every.state(['!disabled'])
+        self.rad_at_page.state(['!disabled'])
+        self.rad_ranges.state(['!disabled'])
+        self._on_split_mode_change()
+
+    def _parse_split_ranges(self, ranges_str, max_pages):
+        if not ranges_str.strip():
+            return None, "Please specify range parameters (e.g. 1-3, 4-5)"
+            
+        ranges = []
+        parts = [p.strip() for p in ranges_str.split(',')]
+        for part in parts:
+            if not part:
+                continue
+            if '-' not in part:
+                try:
+                    p = int(part)
+                    if p < 1 or p > max_pages:
+                        return None, f"Page number {p} out of range (1-{max_pages})"
+                    ranges.append((p - 1, p - 1))
+                except ValueError:
+                    return None, f"Invalid format: '{part}'"
+            else:
+                subparts = part.split('-')
+                if len(subparts) != 2:
+                    return None, f"Invalid range format: '{part}'"
+                try:
+                    start = int(subparts[0].strip())
+                    end = int(subparts[1].strip())
+                    if start > end:
+                        return None, f"Invalid range: '{part}' (start > end)"
+                    if start < 1 or end > max_pages:
+                        return None, f"Page out of range: '{part}' (valid range: 1-{max_pages})"
+                    ranges.append((start - 1, end - 1))
+                except ValueError:
+                    return None, f"Invalid numbers in range: '{part}'"
+        return ranges, None
+
+    def _execute_split(self):
+        if not self.split_source_path:
+            messagebox.showwarning("Warning", "Please select a source PDF file.")
+            return
+            
+        mode = self.split_mode_var.get()
+        parameter = None
+        
+        # Validate inputs based on mode
+        if mode == "at_page":
+            val = self.split_at_entry.get().strip()
+            if not val:
+                messagebox.showerror("Error", "Please enter a split page index.")
+                return
+            try:
+                split_idx = int(val)
+                if split_idx < 1 or split_idx >= self.split_source_pages:
+                    messagebox.showerror("Error", f"Split page index must be between 1 and {self.split_source_pages - 1}.")
+                    return
+                parameter = split_idx
+            except ValueError:
+                messagebox.showerror("Error", "Split page index must be a valid integer.")
+                return
+                
+        elif mode == "ranges":
+            val = self.split_ranges_entry.get().strip()
+            ranges, err = self._parse_split_ranges(val, self.split_source_pages)
+            if err:
+                messagebox.showerror("Error", f"Failed to parse ranges:\n{err}")
+                return
+            parameter = ranges
+            
+        # Determine output directory
+        out_dir = self.split_output_dir if self.split_output_dir else os.path.dirname(self.split_source_path)
+        
+        self.lbl_split_status.config(text="Splitting PDF... Please wait.")
+        self.root.update_idletasks()
+        
+        success, msg = PDFProcessor.split_pdf(
+            pdf_path=self.split_source_path,
+            output_dir=out_dir,
+            mode=mode,
+            parameter=parameter
+        )
+        
+        if success:
+            self.lbl_split_status.config(text="Split completed successfully!")
+            messagebox.showinfo("Success", f"PDF successfully split and saved to:\n{out_dir}")
+        else:
+            self.lbl_split_status.config(text="Split failed.")
+            messagebox.showerror("Error", f"Failed to split PDF:\n{msg}")
 
 if __name__ == "__main__":
     root = tk.Tk()

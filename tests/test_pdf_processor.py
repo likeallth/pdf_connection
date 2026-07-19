@@ -119,5 +119,61 @@ class TestPDFProcessor(unittest.TestCase):
         self.assertEqual(texts, ["Page B", "Page A", "Page C"])
         doc.close()
 
+    def test_split_every_page(self):
+        split_dir = os.path.join(self.test_dir.name, "split_every")
+        success, msg = PDFProcessor.split_pdf(self.pdf1_path, split_dir, 'every')
+        self.assertTrue(success)
+        
+        files = sorted(os.listdir(split_dir))
+        self.assertEqual(len(files), 3)
+        self.assertEqual(files, ["test1_page_1.pdf", "test1_page_2.pdf", "test1_page_3.pdf"])
+        
+        expected_texts = ["Page A", "Page B", "Page A"]
+        for filename, expected in zip(files, expected_texts):
+            path = os.path.join(split_dir, filename)
+            doc = fitz.open(path)
+            self.assertEqual(len(doc), 1)
+            self.assertEqual(doc[0].get_text().strip(), expected)
+            doc.close()
+
+    def test_split_at_page(self):
+        split_dir = os.path.join(self.test_dir.name, "split_at")
+        success, msg = PDFProcessor.split_pdf(self.pdf1_path, split_dir, 'at_page', parameter=2)
+        self.assertTrue(success)
+        
+        files = sorted(os.listdir(split_dir))
+        self.assertEqual(len(files), 2)
+        self.assertEqual(files, ["test1_part_1_1-2.pdf", "test1_part_2_3-3.pdf"])
+        
+        doc1 = fitz.open(os.path.join(split_dir, "test1_part_1_1-2.pdf"))
+        self.assertEqual(len(doc1), 2)
+        self.assertEqual([p.get_text().strip() for p in doc1], ["Page A", "Page B"])
+        doc1.close()
+        
+        doc2 = fitz.open(os.path.join(split_dir, "test1_part_2_3-3.pdf"))
+        self.assertEqual(len(doc2), 1)
+        self.assertEqual([p.get_text().strip() for p in doc2], ["Page A"])
+        doc2.close()
+
+    def test_split_ranges(self):
+        split_dir = os.path.join(self.test_dir.name, "split_ranges")
+        ranges = [(0, 1), (1, 2)]
+        success, msg = PDFProcessor.split_pdf(self.pdf1_path, split_dir, 'ranges', parameter=ranges)
+        self.assertTrue(success)
+        
+        files = sorted(os.listdir(split_dir))
+        self.assertEqual(len(files), 2)
+        self.assertEqual(files, ["test1_range_1-2.pdf", "test1_range_2-3.pdf"])
+        
+        doc1 = fitz.open(os.path.join(split_dir, "test1_range_1-2.pdf"))
+        self.assertEqual(len(doc1), 2)
+        self.assertEqual([p.get_text().strip() for p in doc1], ["Page A", "Page B"])
+        doc1.close()
+        
+        doc2 = fitz.open(os.path.join(split_dir, "test1_range_2-3.pdf"))
+        self.assertEqual(len(doc2), 2)
+        self.assertEqual([p.get_text().strip() for p in doc2], ["Page B", "Page A"])
+        doc2.close()
+
 if __name__ == '__main__':
     unittest.main()
