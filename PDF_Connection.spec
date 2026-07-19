@@ -2,7 +2,7 @@
 from PyInstaller.utils.hooks import collect_all
 
 datas = []
-binaries = []
+binaries = [('C:\\Users\\likea\\anaconda3\\Library\\bin\\ffi.dll', '.'), ('C:\\Users\\likea\\anaconda3\\Library\\bin\\ffi-8.dll', '.'), ('C:\\Users\\likea\\anaconda3\\Library\\bin\\liblzma.dll', '.'), ('C:\\Users\\likea\\anaconda3\\Library\\bin\\libbz2.dll', '.')]
 hiddenimports = []
 tmp_ret = collect_all('qfluentwidgets')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
