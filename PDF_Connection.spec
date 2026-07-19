@@ -3,7 +3,7 @@
 
 a = Analysis(
     ['main.py'],
-    pathex=[],
+    pathex=['C:\\Users\\likea\\anaconda3\\Library\\bin'],
     binaries=[],
     datas=[],
     hiddenimports=[],
