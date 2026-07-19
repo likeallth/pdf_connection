@@ -628,14 +628,21 @@ class MainWindow(FluentWindow):
         self._init_navigation()
 
     def _init_navigation(self):
-        self.addSubInterface(self.merge_interface, FIF.ALBUM, "PDF 병합 (Merge)")
-        self.addSubInterface(self.split_interface, FIF.CUT, "PDF 분할 (Split)")
+        self.addSubInterface(self.merge_interface, FIF.ALBUM, "PDF 병합")
+        self.addSubInterface(self.split_interface, FIF.CUT, "PDF 분할")
         
-        # Safely set expand width for side navigation to prevent text clip
+        # Safely set panel sizes for side navigation to prevent text clipping
+        try:
+            self.navigationInterface.setExpandWidth(220)
+        except AttributeError:
+            pass
+            
         try:
             self.navigationInterface.setMinimumExpandWidth(220)
         except AttributeError:
-            try:
-                self.navigationInterface.setExpandWidth(220)
-            except AttributeError:
-                pass
+            pass
+            
+        try:
+            self.navigationInterface.setCollapseWidth(50)
+        except AttributeError:
+            pass
